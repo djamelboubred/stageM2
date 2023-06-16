@@ -6,11 +6,10 @@ import csv
 import pandas as pd
 import argparse
 from collections import Counter
-import statistics
+import statistics as stat
 from tqdm import tqdm
-import time
 
-
+#python v2bed.py -diff diff-counts.tsv -index tag pvalue log2FC -b kmer_60k.bed -gff gene_60k.gff -CF liste_gene_pi_analisis.csv -CF2 liste_gene_fst_analisis.csv
 
 parser = argparse.ArgumentParser()
 
@@ -23,17 +22,6 @@ parser.add_argument("-CF", "--CF", type=str, help="Comparative file with gene se
 parser.add_argument("-CF2", "--CF2", type=str, help="Comparative file with gene see by different analysis")
 parser.add_argument("-mapq", "--mapq", type=int, help="mapq filter values by defaults mapq = 15")
 args = parser.parse_args()
-
-file_comp=pd.read_csv(args.CF, sep=',')
-file_comp = pd.DataFrame(file_comp)
-
-file_comp2=pd.read_csv(args.CF2, sep=',')
-file_comp2 = pd.DataFrame(file_comp2)
-
-
-
-gff=pd.read_csv(args.gff, sep='\t')
-gff=pd.DataFrame(gff)
 
 dico_kmer_pval_log={}
 
@@ -71,24 +59,21 @@ if args.diff:
 
     #Visualisation de la première clé du dico_kmer_pval_log
     premiere_cle = next(iter(dico_kmer_pval_log))
-    print(dico_kmer_pval_log[premiere_cle])
+    print(dico_kmer_pval_log[premiere_cle])    
     
     # Supprimer la variable diff
     del diff
 
 if args.bed:
-    bed=pd.read_csv(args.bed, sep='\t')
-    bed=pd.DataFrame(bed)
+    bed_file=pd.read_csv(args.bed, sep='\t')
+    bed=pd.DataFrame(bed_file)
     print(f"\n\n*******************\n\nLancement de l'étape: \t\t NB KMERS TO GENE\n\nLe fichier {args.bed} est chargé\n\n*******************")
-    dico_read_length_gene={}
-    dico_coverage={}
-    dico_count_gene={}
-    gene_name='first'
-    thresholds = [5, 10, 25, 50, 75, 90]
-    coverage_threshold = [0] * len(thresholds)
+
+    dico_count_kmer_in_gene={}
     dico_gene_kmer= {}
     gene_identique=False # booléen dans le cas ou le gene est le même gène que la ligne d'avant on a la valeur True
     nb_kmer=0 #itération qui compte le nombre de kmer total qui sont pris en compte en fonction de nos kmer
+
     for i in tqdm(range(len(bed))):
         if int(bed.iloc[i,4]) > mapq:
             nb_kmer+=1
@@ -97,35 +82,20 @@ if args.bed:
             if gene_name in dico_gene_kmer:
                 # La clé existe, ajouter le k-mer à la liste existante
                 dico_gene_kmer[gene_name]['kmer'].append(kmer)
-                kmer_start=int(bed.iloc[i, 1])
-                kmer_stop=int(bed.iloc[i, 2])
-
-                #Compare les valeur de la ligne (kmer) avec celle déjà enregistrer dans le dico (pour un gene)
-                if kmer_start < dico_read_length_gene[gene_name]['kmer_start']:
-                    dico_read_length_gene[gene_name]['kmer_start'] = kmer_start
-                if kmer_stop > dico_read_length_gene[gene_name]['kmer_stop']:
-                    dico_read_length_gene[gene_name]['kmer_stop'] = kmer_stop
-                if kmer_start > dico_read_length_gene[gene_name]['kmer_stop']:
-                    correction= kmer_start - dico_read_length_gene[gene_name]['kmer-stop']
-                    if correction < dico_read_length_gene[gene_name]['correction']:
-                        dico_read_length_gene[gene_name]['correction']=correction
+                
             else:
                 # La clé n'existe pas, créer une nouvelle entrée avec la clé et le k-mer
-                dico_gene_kmer[gene_name] = {'kmer': [kmer]}
-                #Analyse du coverage 
-                kmer_start=int(bed.iloc[i, 1])
-                kmer_stop=int(bed.iloc[i, 2])
                 gene_start=int(bed.iloc[i, 15])
                 gene_stop=int(bed.iloc[i, 16])
-                correction=0
-                dico_read_length_gene[gene_name]={'kmer_start':kmer_start, 'kmer_stop':kmer_stop,'gene_start':gene_start, 'gene_stop':gene_stop, 'correction':correction}
+                length=gene_stop-gene_start
+                dico_gene_kmer[gene_name] = {'kmer': [kmer],'length':length}
 
             #
             #Vérification
             #
             
             if gene_name in dico_gene_kmer:
-                dico_count_gene[gene_name] = {'nb_kmers': len(dico_gene_kmer[gene_name])}
+                dico_count_kmer_in_gene[gene_name] = len(dico_gene_kmer[gene_name]['kmer'])
             else:
                 print(f"La clé '{gene_name}' n'existe pas dans le dictionnaire 'dico_gene_kmer'. Sa valeur de mapQ est = '{int(bed.iloc[i,4])}")
 
@@ -133,9 +103,79 @@ if args.bed:
     premiere_cle = next(iter(dico_gene_kmer))
     print(dico_gene_kmer[premiere_cle])
 
+    #Visualisation de la première clé du dico_count_kmer_in_gene
+    premiere_cle = next(iter(dico_count_kmer_in_gene))
+    print(dico_count_kmer_in_gene[premiere_cle])
+
+    nb_kmer_tot=len(bed)
     print(f"Le Nombre de gène dans le fichier {args.bed} est {len(dico_gene_kmer.keys())}")
-    print(f"Le nombre de kmer ayant une valeur de mapq > {mapq} est {nb_kmer}/{len(bed)}")
+    print(f"Le nombre de kmer ayant une valeur de mapq > {mapq} est {nb_kmer}/{nb_kmer_tot}")
+
+    #Suppression du fichier bed en mémoire
+    del bed_file
+
+    #Suppression de la variables bed
+    del bed
+
+
+    dico_fusion = {gene_name: {'nb_kmers': nb_kmers, 'length': dico_gene_kmer[gene_name]['length']} 
+                        for gene_name, nb_kmers in dico_count_kmer_in_gene.items() if nb_kmers >= 10}
+    
+
+    premiere_cle = next(iter(dico_fusion))
+    print(dico_fusion[premiere_cle])
+
+
+    print(f"Le nombre de gene avec un nombre de kmer >= 10 et une valeur de mapq > {mapq} est {len(dico_fusion)}")
+
+    #supprimer le dictionnaire dico_count_kmer_in_gene
+
+    #del dico_count_kmer_in_gene
+    
+    if args.diff:
+        print(f"\n\n*******************\n\nLancement de l'étape: \t\t MERGING GENES STAT\n\n*******************")
+        for gene_name, infos in tqdm(dico_gene_kmer.items()):
+            kmer=infos['kmer']
+            pvalue=[]
+            logFC=[]
+            for i in range(len(kmer)):
+                pvalue.append(dico_kmer_pval_log[kmer[i]]['pvalue'])
+                logFC.append(dico_kmer_pval_log[kmer[i]]['logFC'])
+            moyenne = stat.mean(logFC)
+            ecart_type = stat.stdev(logFC)
+            mediane = stat.median(pvalue)
+            minimum = min(pvalue)
+            infos['mean_LogFC']=moyenne
+            infos['sd_LogFC']=ecart_type
+            infos['medianne']=mediane
+            infos['min_pvalue']=minimum
+
+
+        premiere_cle = next(iter(dico_gene_kmer))
+        print(dico_gene_kmer[premiere_cle])
+
+    
 
 else:
     print("\n\n*******************\n\nLancement de l'étape: \t\t NB KMERS TO GENE\n\n*******************")
     print("\n\n******************\n\nFichier BED ABSENT\n\nVeuillez relancer l'analyse en vérifiant que l'arguement -bed est bien renseigner\n\n*******************")
+
+if args.bed and args.diff:
+    print(f"Lancement de la création de la liste de gène avec le nombre de kmer, pvalue et logFC")
+
+
+if args.CF:
+
+    file_comp=pd.read_csv(args.CF, sep=',')
+    file_comp = pd.DataFrame(file_comp)
+
+if args.CF2:
+    
+    file_comp2=pd.read_csv(args.CF2, sep=',')
+    file_comp2 = pd.DataFrame(file_comp2)
+
+
+if args.gff:
+
+    gff=pd.read_csv(args.gff, sep='\t')
+    gff=pd.DataFrame(gff)
