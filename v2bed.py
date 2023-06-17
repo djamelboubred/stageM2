@@ -9,6 +9,7 @@ from collections import Counter
 import statistics as stat
 from tqdm import tqdm
 
+#conda activate myenv
 #python v2bed.py -diff diff-counts.tsv -index tag pvalue log2FC -b kmer_60k.bed -gff gene_60k.gff -CF liste_gene_pi_analisis.csv -CF2 liste_gene_fst_analisis.csv
 
 parser = argparse.ArgumentParser()
@@ -77,6 +78,7 @@ if args.bed:
     for i in tqdm(range(len(bed))):
         if int(bed.iloc[i,4]) > mapq:
             nb_kmer+=1
+            region=bed.iloc[i,0]
             gene_name = bed.iloc[i, 20].strip().split(';')[1].split('=')[1]
             kmer=bed.iloc[i, 3].strip().split('_')[2]
             if gene_name in dico_gene_kmer:
@@ -88,7 +90,11 @@ if args.bed:
                 gene_start=int(bed.iloc[i, 15])
                 gene_stop=int(bed.iloc[i, 16])
                 length=gene_stop-gene_start
-                dico_gene_kmer[gene_name] = {'kmer': [kmer],'length':length}
+                if region[0]!='C' and region[1]!='h' and region[2]!='r':
+                    region='Pan'           
+                             
+                dico_gene_kmer[gene_name] = {'kmer': [kmer],'length':length, 'region':region}
+
 
             #
             #Vérification
@@ -118,15 +124,18 @@ if args.bed:
     del bed
 
 
-    dico_fusion = {gene_name: {'nb_kmers': nb_kmers, 'length': dico_gene_kmer[gene_name]['length']} 
+    dico_gene = {gene_name: {'nb_kmers': nb_kmers,'region':dico_gene_kmer[gene_name]['region'], 'length': dico_gene_kmer[gene_name]['length'], 'kmer': dico_gene_kmer[gene_name]['kmer']} 
                         for gene_name, nb_kmers in dico_count_kmer_in_gene.items() if nb_kmers >= 10}
     
+    #Suppression des dictionnaire intermédiaire
+    del dico_count_kmer_in_gene
+    del dico_gene_kmer
 
-    premiere_cle = next(iter(dico_fusion))
-    print(dico_fusion[premiere_cle])
+    premiere_cle = next(iter(dico_gene))
+    print(dico_gene[premiere_cle])
 
 
-    print(f"Le nombre de gene avec un nombre de kmer >= 10 et une valeur de mapq > {mapq} est {len(dico_fusion)}")
+    print(f"Le nombre de gene avec un nombre de kmer >= 10 et une valeur de mapq > {mapq} est {len(dico_gene)}")
 
     #supprimer le dictionnaire dico_count_kmer_in_gene
 
@@ -134,13 +143,16 @@ if args.bed:
     
     if args.diff:
         print(f"\n\n*******************\n\nLancement de l'étape: \t\t MERGING GENES STAT\n\n*******************")
-        for gene_name, infos in tqdm(dico_gene_kmer.items()):
-            kmer=infos['kmer']
+        for gene_name, infos in tqdm(dico_gene.items()):
+            kmers=infos['kmer']
             pvalue=[]
             logFC=[]
-            for i in range(len(kmer)):
-                pvalue.append(dico_kmer_pval_log[kmer[i]]['pvalue'])
-                logFC.append(dico_kmer_pval_log[kmer[i]]['logFC'])
+            for kmer in kmers:
+                if kmer in dico_kmer_pval_log:
+                    pvalue.append(dico_kmer_pval_log[kmer]['pvalue'])
+                    logFC.append(dico_kmer_pval_log[kmer]['logFC'])
+                else:
+                    print(f"ERROR KEY.VALUES {kmer}")
             moyenne = stat.mean(logFC)
             ecart_type = stat.stdev(logFC)
             mediane = stat.median(pvalue)
@@ -150,9 +162,15 @@ if args.bed:
             infos['medianne']=mediane
             infos['min_pvalue']=minimum
 
+        del dico_gene['kmer']
 
         premiere_cle = next(iter(dico_gene_kmer))
         print(dico_gene_kmer[premiere_cle])
+
+    if args.CF:
+
+    file_comp=pd.read_csv(args.CF, sep=',')
+    file_comp = pd.DataFrame(file_comp)
 
     
 
@@ -160,14 +178,8 @@ else:
     print("\n\n*******************\n\nLancement de l'étape: \t\t NB KMERS TO GENE\n\n*******************")
     print("\n\n******************\n\nFichier BED ABSENT\n\nVeuillez relancer l'analyse en vérifiant que l'arguement -bed est bien renseigner\n\n*******************")
 
-if args.bed and args.diff:
-    print(f"Lancement de la création de la liste de gène avec le nombre de kmer, pvalue et logFC")
 
-
-if args.CF:
-
-    file_comp=pd.read_csv(args.CF, sep=',')
-    file_comp = pd.DataFrame(file_comp)
+    
 
 if args.CF2:
     
