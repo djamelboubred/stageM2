@@ -12,25 +12,6 @@ import time
 
 
 
-parser = argparse.ArgumentParser()
-
-
-parser.add_argument("-diff", "--diff", type=str, help="File with pvlaue and logFoldChange after DE analysis")
-parser.add_argument('-index', nargs='+', help='List of indices') #prend en argument une liste de nom de colonnes en premier celle avec les kmer en second la pvalue et en dernier le logFoldChange
-parser.add_argument("-b", "--bed", type=str, help="Bed file")
-parser.add_argument("-gff", "--gff", type=str, help="GFF file format with gene anotation")
-parser.add_argument("-CF", "--CF", type=str, help="Comparative file with gene see by different analysis")
-parser.add_argument("-CF2", "--CF2", type=str, help="Comparative file with gene see by different analysis")
-parser.add_argument("-mapq", "--mapq", type=int, help="mapq filter values by defaults mapq = 15")
-args = parser.parse_args()
-
-file_comp=pd.read_csv(args.CF, sep=',')
-file_comp = pd.DataFrame(file_comp)
-
-file_comp2=pd.read_csv(args.CF2, sep=',')
-file_comp2 = pd.DataFrame(file_comp2)
-
-
 
 gff=pd.read_csv(args.gff, sep='\t')
 gff=pd.DataFrame(gff)
