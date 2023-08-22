@@ -1,0 +1,222 @@
+STAGE DJAMEL
+
+24 Février:
+
+Bibliographie
+prise en mains de l'état de l'art
+Prise en mains du cluster de calcul
+Prise en mains des outils comme jellyfish, et kamrat
+
+03 Mars:
+    
+Obtention de la table de comptages avec jellyfish avec jeu de données test
+utilisation de joincounts sur jeu de test
+Traitement des données à l'aide de fastqc
+
+
+10 Mars:
+
+Abandon de l'outils kamrat, car pas adapté à notre analyse (Dekupl semble plus pertinent)
+Utilisation de cutadapt pour le traitement des données
+Utilisation de DEkupl pour l'obtention de la table de comptages et pour l'analyse DE
+
+Choix des paramètres pris en input de DEkupl
+Choix des seuil pour le risque alpha et pour le FDR
+
+17 Mars:
+
+Visualisation de nos sorties de DEkupl et visualisation de la distribution du nombre de kmer au fil de nos analyses
+
+Point du 24 mars 2023
+--------------------------------
+
+=> Résume de tableau des individus
+* demander à François pourquoi on a viré les individus.
+* finaliser le tableau de reads avant et après nettoyage
+    * histogramme des nb des reads : bruts et nettoyés
+
+ke-dupl
+* ajouter un diagramme simplifié qui montre ce qui dekupl fait en resumé
+p-value? FDR = paj? 
+
+-F  test
+
+Table d'hachage  sur ke-dupl ? est ce que c'est le nb des kmers? il ya a une diff avec chrunk  dans le config?
+
+ expliquer les kmers uniques et distint
+  * décalage? faire un dessin
+
+nb kmes au debut de l'analyse. combien ont été filtré?
+calculer la distribution de p-values sur tous les kmers
+quelle est la diff entre les pvalues du fichier raw et diff ? 
+* pvalues BH FDR : vérifier les valeurs dans les fichiers.
+ => c'est quoi la FDR? 
+ 
+merge-tags params ? : script de ke-dupl
+
+
+
+Point du 30 mars 2023
+-------------------------------
+
+[X]=> Relancer les analyses sans l'échantillons RC4
+
+[X]=> faire un volcano plot 
+=> ACP avant et après analyse diff
+
+=> Distribution des pvalues / filtre à 0.01
+
+=> Visualisation mergeTags avec ComplexHeatmap (voir pertinence)
+
+=> mettre en place une étape de mapping
+( voir comment traiter les queues poly A)
+
+
+Mapping des kmer diff sur la réferences de Christines 
+
+Mapping contigs sur la references ??
+
+
+7 Avril:
+
+Visualisation de la taille des contigs
+Choix d'abandon du mappings des contigs sur la références (car on a une tailles de contigs trop faibles/ proche de 31 mers)
+Obtention de la référence faites par Christine (nom de famille ?)
+
+14 Avril:
+
+Mapping à l'aide de bwa aln
+Obtention de nos sorties (fichier sam et bam)
+Choix des outils et filtre à appliqué sur nos fichier de sorties de bwa aln
+
+21 Avril:
+
+Sélection des kmers en fonction des tags additionnel du fichiers sam (dernière colonnes) ainsi que code Cigar et suppression des kmers non mappé.
+Vérification des paramètre de l'alignement via Bwa aln.
+(choix trop stringenant , on choisis de changer pour accepter au moins une erreur (1 nt) lors de l'alignement).
+
+On obtient un alignement d'environ 94%  de kmer qui mappe sur notre référence.
+
+28 Avril:
+    
+Outils bedtools instersect à utiliser ( abandon du script fais par mes soins) car script personnel pas assez fiable/long
+appliqué bedtools intersect sur mon fichier bam et sur le fichier gff
+Choix des filtres à appliqué comme la sélection des kmers ayant un mapQ > 0
+Ainsi que du code CIAGR = 31M (On oblige à avoir nos 31 nucléotides qui match avec notre référence (cependant pas obligé d'être identique)) et les kmers n'ayant pas mappé
+
+Comparaison de test dans même contexte (31 kmers) faite à l'aide de bwa mem => on reste sur bwa aln meilleurs rendement 
+
+5 Mai:
+
+Nous avons discuter des arguments choisis pour l'outils bedtools intersect (avec un tableau récapitulatifs du nombre de kmer en fonction du choix des paramètres)
+Puis à partir du fichier bed qui est la sortis de bedtools intersect nous avons calculer quelques statistiques comme le nombre de kmer par gène, le nombre de gène par chromosomes, le nombre de kmer par chromosomes, le nombre de gène pris en compte dans notre analyse par rapport au nombre de gène contenue dans notre fichier d'annotation.
+
+Une liste de gène avec le nombre de kmer est créer, (comparaison avec quelque gène de l'article de Cubry 2018/2020)
+Une liste de gène avec les pvalue de chaque kmer associé est créer (doit être vérifier), Cette liste pourrais être comparé à la liste de gène de l'article de Cubry (rajout d'un tags pour présence absence),
+On a un nombre de gène (pour le génome) égal à environ 50% des gènes contenue dans le fichier gff ( et 0.3 pourcent) pour le pangénome.
+
+Je dois recalculer ces statistiques mais cette fois avec uniquement les kmers ayant au moins 10 kmers associés au gène. Pour récupérer les gènes ayant un poids plus important.
+
+Présentation de l'outils ikiss (tout nos tests ont fonctionné),
+
+12 Mai:
+    
+Présentation des résultats des gènes ayant au moins 10 kmers, nombre de gènes trouvé DE = 50% du génome
+Nb de gène trop important, nos analyses (comme mapping) pas assez stringeant ? 
+Regarder distribution des MapQ dans fichier Bam
+Comparer l'état de l'art sur le mapping avec des kmers.
+
+
+
+lien ppx : https://docs.google.com/presentation/d/1dKIEqQMUltq9xHjgwUWSpVTAL_njriH9OCjOzfYd0fI/edit?usp=sharing
+
+
+19 Mai:
+    
+Formation avancé linux
+
+26 Mai:
+    
+Relecture des scripts
+
+2 Juin:
+
+On a choisi de croiser nos résultat obtenue par DEkupl avec des analyses RNAseq classique. 
+
+9 Juin:
+
+On a obtenue nos comptages à partir des données RNA-seq
+
+16 Juin:
+
+Présentation du stage à l'équipe DEI.
+Formation reproductibilité
+du 12 au 16 juin
+
+23 Juin:
+
+On applique une méthode DESeq2 classique au comptage RNA-seq le traitement semble durée envrion 2 jours
+
+30 Juin:
+
+On obtient 2050 gènes pour l'analyse DESeq2 RNA-seq comparé au 16 150 gènes avec la méthode DEkupl sur les k-mers.
+On décide de croiser les deux fichiers contenant les gènes identifiés.
+
+Congrès JOBIM du 27 juin au 30 juin
+
+7 Juillet:
+
+Développement du script Intersect.py. Il a pour but de croiser 2 fichiers tsv sur la première colonnes de chaque fichier et de créer un fichier tvs contenant toutes les informations contenue dans les deux fichiers pour une variable.
+
+14 Juillet:
+
+On obtient les résultats du croisement des deux listes de gènes pour les données transcriptomiques. On obtient environ 594 gènes. Soit environ 31 % des gènes identifiés sont communs aux deux anlayses.
+On décide de partir sur des vérifications complémentaire.
+
+Avec pour hypothèse que la variation du nombre de gènes est dù aux différences entre les méthodes statistiques.
+
+On lance en parallèle les analyses sur les données génomique-climat
+On a identifié 10 837 gènes, ce qui est du même ordre que pour les données transcriptomiques.
+
+21 Juillet:
+
+On élimine l'hypothèse de la variation dû aux différences entre les méthodes statistiques.
+Début de la rédaction du rapport.
+Présentation du stage au référent pédagogique.
+
+28 Juillet:
+
+rédaction du rapport.
+
+4 Août:
+
+Rédaction rapport.
+
+11 Août:
+
+Rédaction rapport.
+
+18 Août:
+
+Rédaction Rapport.
+
+20 Août:
+
+Fin du stage.
+
+
+Sratégie/ Poursuite du Projet
+
+Nous avons poser l'hypothèse que la variation du nombre de gène entre la méthode DEkupl et DESeq2 est dû à l'étape d'identification des gènes.
+L'erreur pouvant provenir lors du passage du k-mer au gène.
+
+Une des possibilité est une erreur situé au niveau de bedtools intersect, qui croise les positions des k-mer à celle des gènes.
+Une vérification possible serai de tester cette partie de l'identification des gènes.
+
+De plus, nous sommes partis sur une méthode d'alignement avec nos k-mers. Tandis que DEkupl propose une méthode d'assemblage des k-mers en contigs et ensuite mappés les contigs.
+
+Une des stratégies possible serait de faire l'assemblage des k-mers, et ensuite d'identifier les gènes à partir des contigs assemblés.
+
+
+
+
